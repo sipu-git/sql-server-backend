@@ -4,6 +4,9 @@ import { sqlConnection } from "../configs/db";
 export const addEmployeeInfo = async (req: Request, res: Response) => {
     try {
         const { emp_id, emp_name, emp_phone, dept } = req.body;
+        if (!emp_id || !emp_name || !emp_phone || !dept) {
+            return res.status(400).json({ message: "All fields are required" });
+        }
         const pool = await sqlConnection()
         const requestInput = pool.request()
         const inputs: Record<string, unknown> = {
