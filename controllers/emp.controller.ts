@@ -119,4 +119,29 @@ export const deleteInfo = async (req: Request, res: Response) => {
     }
 }
 
+export const searchInfos = async (req: Request, res: Response) => {
+    try {
+        const { emp_name, dept } = req.query;
+        const pool = await sqlConnection();
+        const requestQuery = pool.request()
+        if (emp_name) {
+            requestQuery.input("emp_name", `%${emp_name}`)
+        }
+        if (dept) {
+            requestQuery.input("dept", `%${dept}`)
+        }
+        let serachQuery = `SELECT emp_id, emp_name, emp_phone, dept FROM dbo.employee_details WHERE 1 = 1`;
+        if (emp_name) {
+            serachQuery += ` AND emp_name COLLATE SQL_Latin1_General_CP1_CI_AS LIKE @emp_name`;
+        }
+        if (dept) {
+            serachQuery += ` AND dept COLLATE SQL_Latin1_General_CP1_CI_AS LIKE @dept`;
+        }
+        const resultQuery = await requestQuery.query(serachQuery)
+        return res.status(200).json({ message: "Info fetched successfully!", data: resultQuery.recordset })
+    } catch (error) {
+        console.error("internal server error:", error);
+        return res.status(500).json({ error: "Failed to load server!" });
 
+    }
+}
