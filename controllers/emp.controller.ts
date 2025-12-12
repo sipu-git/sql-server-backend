@@ -119,29 +119,36 @@ export const deleteInfo = async (req: Request, res: Response) => {
     }
 }
 
-export const searchInfos = async (req: Request, res: Response) => {
+export const searchEmployes = async (req: Request, res: Response) => {
     try {
         const { emp_name, dept } = req.query;
-        const pool = await sqlConnection();
-        const requestQuery = pool.request()
+        console.log("Receieved search params:", emp_name, dept);
+        const pool = await sqlConnection()
+        const searchRequest = pool.request()
+        let query = `SELECT emp_name,dept FROM dbo.employee_details WHERE 1=1`;
         if (emp_name) {
-            requestQuery.input("emp_name", `%${emp_name}`)
+            searchRequest.input("emp_name", `%${emp_name}%`);
+            query += ` AND emp_name COLLATE SQL_Latin1_General_CP1_CI_AS LIKE @emp_name`;
         }
-        if (dept) {
-            requestQuery.input("dept", `%${dept}`)
-        }
-        let serachQuery = `SELECT emp_id, emp_name, emp_phone, dept FROM dbo.employee_details WHERE 1 = 1`;
-        if (emp_name) {
-            serachQuery += ` AND emp_name COLLATE SQL_Latin1_General_CP1_CI_AS LIKE @emp_name`;
-        }
-        if (dept) {
-            serachQuery += ` AND dept COLLATE SQL_Latin1_General_CP1_CI_AS LIKE @dept`;
-        }
-        const resultQuery = await requestQuery.query(serachQuery)
-        return res.status(200).json({ message: "Info fetched successfully!", data: resultQuery.recordset })
-    } catch (error) {
-        console.error("internal server error:", error);
-        return res.status(500).json({ error: "Failed to load server!" });
 
+        if (dept) {
+            searchRequest.input("dept", `%${dept}%`);
+            query += ` AND dept COLLATE SQL_Latin1_General_CP1_CI_AS LIKE @dept`;
+        }
+        console.log("Final Query:", query);
+        console.log("Inputs:", searchRequest.parameters);
+        const response = await searchRequest.query(query)
+        return res.status(200).json({
+            message: "Employee record found successfully!",
+            data: response.recordset,
+            total: response.recordset.length
+        })
+    } catch (error: any) {
+        console.error("Search API Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+            error: error.message
+        });
     }
 }
